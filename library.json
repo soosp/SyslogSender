@@ -1,6 +1,6 @@
 {
   "name": "SyslogSender",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Sends RFC 5424 syslog messages over UDP from ESP32, ESP8266 and AVR. A sender, not a logging framework: forwards ESP_LOG (ESP32), a library's logger callback, or the application's own messages. No queue, no heap after begin(), host-testable framing.",
   "keywords": [
     "syslog",

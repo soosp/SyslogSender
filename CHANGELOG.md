@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-11
+
 ### Fixed
 
 - Halved the stack a hooked log line costs on the logging task: the header
@@ -32,6 +34,7 @@
   `ESP_LOG` hook (requires `USE_ESP_IDF_LOG`); host tests for framing,
   timestamps and line parsing.
 
-[Unreleased]: https://github.com/soosp/SyslogSender/compare/0.1.0...HEAD
+[Unreleased]: https://github.com/soosp/SyslogSender/compare/0.1.2...HEAD
+[0.1.2]: https://github.com/soosp/SyslogSender/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/soosp/SyslogSender/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/soosp/SyslogSender/releases/tag/0.1.0
