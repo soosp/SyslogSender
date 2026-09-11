@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-11
+
 ## Fixed
 
 - `begin()` no longer opens the UDP socket or resolves an FQDN: both need the
@@ -18,4 +20,5 @@
   timestamps and line parsing.
 
 [Unreleased]: https://github.com/soosp/SyslogSender/compare/0.1.0...HEAD
+[0.1.1]: https://github.com/soosp/SyslogSender/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/soosp/SyslogSender/releases/tag/0.1.0
