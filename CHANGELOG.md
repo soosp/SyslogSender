@@ -4,7 +4,7 @@
 
 ## [0.1.1] - 2026-09-11
 
-## Fixed
+### Fixed
 
 - `begin()` no longer opens the UDP socket or resolves an FQDN: both need the
   network stack, and `begin()` is typically called before the interface is
@@ -13,7 +13,7 @@
 
 ## [0.1.0] - 2026-09-11
 
-## Added
+### Added
 
 - Initial release: RFC 5424 over UDP for ESP32, ESP8266 and AVR; ESP32
   `ESP_LOG` hook (requires `USE_ESP_IDF_LOG`); host tests for framing,
