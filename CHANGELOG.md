@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- Halved the stack a hooked log line costs on the logging task: the header
+  is sanitised straight into the frame instead of through RFC-maximum
+  temporaries, and the ESP_LOG hook sends by length out of its line buffer
+  instead of copying it. A 4 kB task overflowed with 0.1.1; the README now
+  states the budget.
+
+### Added
+
+- `send(severity, msgid, msg, len)` for text that sits inside a larger
+  buffer and is not NUL-terminated.
+
 ## [0.1.1] - 2026-09-11
 
 ### Fixed

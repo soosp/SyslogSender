@@ -106,6 +106,10 @@ size_t SyslogSender::_header(char* frame, size_t cap, uint8_t severity, const ch
 }
 
 bool SyslogSender::send(uint8_t severity, const char* msgid, const char* msg) {
+    return send(severity, msgid, msg, msg ? strlen(msg) : 0);
+}
+
+bool SyslogSender::send(uint8_t severity, const char* msgid, const char* msg, size_t msgLen) {
     if (!_enabled || !_resolved || (severity & 0x07) > _minSeverity) {
         if (_enabled) ++_dropped;
         return false;
@@ -114,7 +118,7 @@ bool SyslogSender::send(uint8_t severity, const char* msgid, const char* msg) {
     size_t len = _header(frame, sizeof(frame), severity, msgid);
     if (len == 0) { ++_dropped; return false; }
     if (msg) {
-        size_t mlen = strlen(msg);
+        size_t mlen = msgLen;
         while (mlen > 0 && (msg[mlen - 1] == '\n' || msg[mlen - 1] == '\r')) --mlen;
         if (mlen > sizeof(frame) - 1 - len) mlen = sizeof(frame) - 1 - len;
         memcpy(frame + len, msg, mlen);

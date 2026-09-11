@@ -24,7 +24,10 @@ On the wire:
   never waits on the network; a lost datagram is a lost datagram, and the
   `dropped()` counter says how many.
 - **No heap after `begin()`.** One frame buffer on the caller's stack
-  (`SYSLOG_SENDER_MAX_LEN`, 512 by default).
+  (`SYSLOG_SENDER_MAX_LEN`, 512 by default). Budget for a task that logs
+  through the ESP_LOG hook: about `2 × SYSLOG_SENDER_MAX_LEN + 100` bytes on
+  top of what its own logging takes — a 4 kB task stack is not enough with the
+  default; give it 6 kB or set `SYSLOG_SENDER_MAX_LEN=256`.
 - **No serial.** Console output stays whatever it was; the ESP_LOG hook
   forwards a copy and leaves the console line untouched.
 - **Thread-safe on ESP32.** `send()` may be called from any task; the UDP
@@ -101,6 +104,7 @@ All methods are on `SyslogSender`; severities and facilities are the
 |Method|Meaning|
 |---|---|
 |`bool send(sev, msgid, const char* msg)`|One message; `msgid` is a short tag (MSGID), may be null. True if handed to the network stack.|
+|`bool send(sev, msgid, const char* msg, size_t len)`|The first `len` bytes of `msg`, not necessarily NUL-terminated.|
 |`bool sendf(sev, msgid, fmt, ...)` / `vsendf(...)`|printf-style, formatted straight into the frame.|
 |`bool send(sev, msgid, const __FlashStringHelper*)`|Flash-resident text: `F("...")`.|
 |`bool sendf_P(sev, msgid, PGM_P fmt, ...)` / `vsendf_P(...)`|Flash-resident format: `PSTR("...")`.|

@@ -22,6 +22,11 @@
  * Time: the timestamp comes from a caller-supplied clock (setClock()); with
  * none, or before the clock is valid, the NILVALUE is sent and the receiver
  * stamps the line on arrival.
+ *
+ * Stack: a send() costs SYSLOG_SENDER_MAX_LEN plus about 100 bytes on the
+ * caller's stack, and the ESP_LOG hook another SYSLOG_SENDER_MAX_LEN for the
+ * line it formats. A task that logs through the hook needs that much room
+ * on top of what its own logging already takes.
  */
 
 #include <Arduino.h>
@@ -132,6 +137,10 @@ public:
     /** @brief Sends one message. @p msgid is a short tag (MSGID), may be null.
      *  @return true if handed to the network stack. */
     bool send(uint8_t severity, const char* msgid, const char* msg);
+
+    /** @brief Sends the first @p msgLen bytes of @p msg, which need not be
+     *  NUL-terminated — for text that sits inside a larger buffer. */
+    bool send(uint8_t severity, const char* msgid, const char* msg, size_t msgLen);
 
     /** @brief printf-style send(). */
     bool sendf(uint8_t severity, const char* msgid, const char* fmt, ...)

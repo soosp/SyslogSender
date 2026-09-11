@@ -43,13 +43,9 @@ int hook(const char* fmt, va_list ap) {
             tag[n] = '\0';
             msgid = tag;
         }
-        // The message is sent up to its trimmed length: a copy is cheaper
-        // than an in-place terminator on a buffer the serial path already used.
-        char msg[SYSLOG_SENDER_MAX_LEN];
-        size_t n = p.msgLen < sizeof(msg) - 1 ? p.msgLen : sizeof(msg) - 1;
-        memcpy(msg, p.msg, n);
-        msg[n] = '\0';
-        s_sender->send(sev, msgid, msg);
+        // Sent by length, straight out of the line buffer: no second copy on
+        // this task's stack.
+        s_sender->send(sev, msgid, p.msg, p.msgLen);
     }
 
     s_inHook.store(false);

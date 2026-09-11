@@ -130,35 +130,35 @@ inline size_t buildHeader(char* out, size_t cap,
                           const char* timestamp, const char* hostname, const char* app,
                           const char* procid, const char* msgid) {
     if (cap == 0) return 0;
-    char host[MAX_HOSTNAME + 1], appn[MAX_APPNAME + 1], proc[MAX_PROCID + 1], mid[MAX_MSGID + 1];
-    field(host, sizeof(host), hostname, MAX_HOSTNAME);
-    field(appn, sizeof(appn), app,      MAX_APPNAME);
-    field(proc, sizeof(proc), procid,   MAX_PROCID);
-    field(mid,  sizeof(mid),  msgid,    MAX_MSGID);
+    // Fields are sanitised straight into `out`: no temporaries, because this
+    // runs on the logging task's stack and a header built from the RFC's
+    // maximum field sizes would cost half a kilobyte there.
     const unsigned pri = (facility & 0x1F) * 8u + (severity & 0x07);
     const char* ts = (timestamp && *timestamp) ? timestamp : "-";
-    const int n = snprintf(out, cap, "<%u>1 %s %s %s %s %s - ", pri, ts, host, appn, proc, mid);
+    int n = snprintf(out, cap, "<%u>1 %s ", pri, ts);
     if (n < 0 || static_cast<size_t>(n) >= cap) { out[0] = '\0'; return 0; }
-    return static_cast<size_t>(n);
+    size_t len = static_cast<size_t>(n);
+    const char* fields[4] = { hostname, app, procid, msgid };
+    const size_t maxes[4] = { MAX_HOSTNAME, MAX_APPNAME, MAX_PROCID, MAX_MSGID };
+    for (int i = 0; i < 4; ++i) {
+        const size_t f = field(out + len, cap - len, fields[i], maxes[i]);
+        if (f == 0 && !(cap - len >= 2)) { out[0] = '\0'; return 0; }
+        len += f;
+        if (len + 1 >= cap) { out[0] = '\0'; return 0; }
+        out[len++] = ' ';
+    }
+    if (len + 3 >= cap) { out[0] = '\0'; return 0; }
+    out[len++] = '-'; out[len++] = ' ';
+    out[len] = '\0';
+    return len;
 }
 
 inline size_t build(char* out, size_t cap,
                     uint8_t facility, uint8_t severity,
                     const char* timestamp, const char* hostname, const char* app,
                     const char* procid, const char* msgid, const char* msg) {
-    if (cap == 0) return 0;
-    char host[MAX_HOSTNAME + 1], appn[MAX_APPNAME + 1], proc[MAX_PROCID + 1], mid[MAX_MSGID + 1];
-    field(host, sizeof(host), hostname, MAX_HOSTNAME);
-    field(appn, sizeof(appn), app,      MAX_APPNAME);
-    field(proc, sizeof(proc), procid,   MAX_PROCID);
-    field(mid,  sizeof(mid),  msgid,    MAX_MSGID);
-    const unsigned pri = (facility & 0x1F) * 8u + (severity & 0x07);
-    const char* ts = (timestamp && *timestamp) ? timestamp : "-";
-
-    int n = snprintf(out, cap, "<%u>1 %s %s %s %s %s - ", pri, ts, host, appn, proc, mid);
-    if (n < 0) { out[0] = '\0'; return 0; }
-    size_t len = static_cast<size_t>(n);
-    if (len >= cap) { out[cap - 1] = '\0'; return cap - 1; }
+    size_t len = buildHeader(out, cap, facility, severity, timestamp, hostname, app, procid, msgid);
+    if (len == 0) return 0;
 
     if (msg) {
         size_t mlen = strlen(msg);
