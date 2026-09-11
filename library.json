@@ -1,0 +1,43 @@
+{
+  "name": "SyslogSender",
+  "version": "0.1.0",
+  "description": "Sends RFC 5424 syslog messages over UDP from ESP32, ESP8266 and AVR. A sender, not a logging framework: forwards ESP_LOG (ESP32), a library's logger callback, or the application's own messages. No queue, no heap after begin(), host-testable framing.",
+  "keywords": [
+    "syslog",
+    "logging",
+    "rfc5424",
+    "udp",
+    "esp32",
+    "esp8266",
+    "avr"
+  ],
+  "authors": [
+    {
+      "name": "Péter Soós",
+      "url": "https://github.com/soosp"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soosp/SyslogSender"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/soosp/SyslogSender",
+  "dependencies": [
+    {
+      "name": "soosp/Host",
+      "version": "^0.7.0"
+    },
+    {
+      "name": "arduino-libraries/Ethernet",
+      "version": "^2.0.2",
+      "platforms": ["atmelavr"]
+    }
+  ],
+  "frameworks": "arduino",
+  "platforms": [
+    "espressif32",
+    "espressif8266",
+    "atmelavr"
+  ]
+}

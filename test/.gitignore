@@ -1,0 +1,5 @@
+# Built host-test binaries
+format_harness
+parse_harness
+*.exe
+*.o
