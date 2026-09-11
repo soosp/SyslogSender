@@ -33,8 +33,16 @@ bool SyslogSender::begin(const char* target, const char* hostname, const char* a
 }
 
 void SyslogSender::end() {
+    // The gate first, then the socket under the same mutex send() holds while
+    // it uses the socket: a reconfiguration from the portal's task must not
+    // pull the socket out from under a task that is mid-send.
     _enabled = false;
-    if (_socketOpen) { _udp.stop(); _socketOpen = false; }
+    if (_socketOpen) {
+        const bool locked = _lock();
+        _udp.stop();
+        _socketOpen = false;
+        if (locked) _unlock();
+    }
     _begun = false;
 }
 
@@ -43,7 +51,9 @@ void SyslogSender::setEnabled(bool on) {
     if (on && !_socketOpen) {
         // Local port 0 lets the stack pick one; needed for beginPacket() on
         // every core. Called from the network-up event, when the stack is up.
+        const bool locked = _lock();
         _socketOpen = _udp.begin(0) == 1;
+        if (locked) _unlock();
     }
     _enabled = on && _socketOpen;
 }

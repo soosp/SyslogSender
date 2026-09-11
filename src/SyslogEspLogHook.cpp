@@ -26,6 +26,19 @@ int hook(const char* fmt, va_list ap) {
 
     if (!s_sender || !s_sender->isEnabled()) return written;
     if (xPortInIsrContext()) return written;
+
+    // ESP-IDF's format string starts with the level letter (after an optional
+    // colour escape), so a line below the floor — the sender's or the hook's
+    // — is dropped before anything is formatted. Debug lines cost nothing
+    // when only INFO and above are forwarded.
+    {
+        const char* f = SyslogEspLogParse::skipAnsi(fmt);
+        if (SyslogEspLogParse::isLevel(f[0])) {
+            const uint8_t sev = SyslogFormat::severityFromEspLevel(f[0]);
+            if (sev > s_minSeverity || sev > s_sender->minSeverity()) return written;
+        }
+    }
+
     if (s_inHook.exchange(true)) return written;   // nested log from the stack
 
     char line[SYSLOG_SENDER_MAX_LEN];

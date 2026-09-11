@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+### Changed
+
+- The ESP_LOG hook reads the level letter from the format string and drops a
+  line below either floor — the hook's or the sender's `minSeverity()` —
+  before formatting it. A hook installed with `SEV_DEBUG` can therefore be
+  governed at runtime by `setMinSeverity()` on the sender at no cost for
+  the lines it does not forward.
+- `end()` and the socket-opening `setEnabled(true)` take the send mutex on
+  ESP32, so a reconfiguration from another task (a portal save) cannot pull
+  the socket out from under a task that is mid-send.
+
 ## [0.1.2] - 2026-09-11
 
 ### Fixed

@@ -38,6 +38,10 @@ namespace SyslogEspLogHook {
  * @param sender      Where lines go. Must outlive the hook.
  * @param minSeverity Lowest severity forwarded; lines below it (numerically
  *                    above it) stay serial-only. SEV_INFO forwards E, W and I.
+ *                    The sender's own setMinSeverity() applies as well, so a
+ *                    hook installed with SEV_DEBUG lets a runtime setting on
+ *                    the sender decide; either floor is checked before the
+ *                    line is formatted, so a dropped line costs nothing.
  */
 void install(SyslogSender& sender, uint8_t minSeverity = SyslogFormat::SEV_INFO);
 
