@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-12
+
 ### Changed
 
 - The ESP_LOG hook reads the level letter from the format string and drops a
@@ -45,7 +47,8 @@
   `ESP_LOG` hook (requires `USE_ESP_IDF_LOG`); host tests for framing,
   timestamps and line parsing.
 
-[Unreleased]: https://github.com/soosp/SyslogSender/compare/0.1.2...HEAD
+[Unreleased]: https://github.com/soosp/SyslogSender/compare/0.1.3...HEAD
+[0.1.3]: https://github.com/soosp/SyslogSender/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/soosp/SyslogSender/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/soosp/SyslogSender/compare/0.1.0...0.1.1
 [0.1.0]: https://github.com/soosp/SyslogSender/releases/tag/0.1.0
