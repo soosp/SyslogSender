@@ -84,7 +84,11 @@ public:
     SyslogSender();
 
     /**
-     * @brief Configures the sender. Does not send.
+     * @brief Configures the sender. Does not send and does not touch the
+     *        network stack, so it is safe before the interface is up. The
+     *        socket is opened by the first setEnabled(true); an FQDN target
+     *        is resolved by resolveTarget(). Call both from the network-up
+     *        event.
      * @param target   Syslog server, IPv4 dotted or FQDN (validated).
      * @param hostname HOSTNAME field: this device's name.
      * @param app      APP-NAME field.
@@ -97,8 +101,10 @@ public:
     /** @brief Stops sending; the configuration is kept. */
     void end();
 
-    /** @brief Enables or disables sending. Disabled, send() returns false at
-     *  once. Wire this to the network manager's connected/disconnected events. */
+    /** @brief Enables or disables sending. Enabling opens the UDP socket the
+     *  first time, so it must be called with the network stack up. Disabled,
+     *  send() returns false at once. Wire this to the network manager's
+     *  connected/disconnected events. */
     void setEnabled(bool on);
     bool isEnabled() const { return _enabled; }
 
@@ -116,9 +122,9 @@ public:
     void setClock(ClockFn fn) { _clock = fn; }
 
     /**
-     * @brief Resolves the target FQDN (no-op for an IP). Called by begin();
-     *        call again after the network comes back, since DNS may not have
-     *        been reachable at begin().
+     * @brief Resolves the target FQDN (parses an IP). Needs the network
+     *        stack: call it from the network-up event, and again after a
+     *        reconnect, since DNS may not have been reachable before.
      * @return true if the target is resolved.
      */
     bool resolveTarget();
@@ -164,6 +170,7 @@ private:
     bool      _targetIsIp  = false;
     bool      _resolved    = false;
     bool      _begun       = false;
+    bool      _socketOpen  = false;
     volatile bool _enabled = false;
     uint8_t   _facility    = SyslogFormat::FAC_LOCAL0;
     uint8_t   _minSeverity = SyslogFormat::SEV_DEBUG;

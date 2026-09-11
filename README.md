@@ -8,7 +8,7 @@ application — and this class frames it and sends it.
 ```cpp
 SyslogSender syslog;
 syslog.begin("192.168.1.10", "esp-123456", "myapp"); // target (IP or FQDN), HOSTNAME, APP-NAME
-syslog.setEnabled(true);                             // wire to your network manager's events
+syslog.setEnabled(true);                             // from the network-up event (opens the socket)
 syslog.send(SyslogFormat::SEV_WARNING, "gps", "PPS lost");
 ```
 
@@ -34,9 +34,13 @@ On the wire:
   whether the wall clock is to be trusted and what it reads; until it is, the
   NILVALUE is sent and the receiver stamps the line on arrival.
 - **Target validated, not resolved on every send.** IP or FQDN, checked with
-  [Host](https://github.com/soosp/Host)'s validators, resolved once at
-  `begin()` and again on `resolveTarget()` — call that when the network comes
-  back, since DNS may not have been reachable at boot.
+  [Host](https://github.com/soosp/Host)'s validators; an FQDN is resolved by
+  `resolveTarget()`, which needs the network stack — call it from the
+  network-up event, and again after a reconnect.
+- **Safe before the network exists.** `begin()` only stores configuration;
+  the socket is opened by the first `setEnabled(true)`. So the usual order —
+  configure in `setup()`, enable from the connected event — works even when
+  the interface (and lwIP) starts later.
 
 Flash-resident text on AVR and ESP8266: `send(sev, tag, F("..."))` and
 `sendf_P(sev, tag, PSTR("..."), ...)` read the string from PROGMEM; the plain
@@ -83,14 +87,14 @@ All methods are on `SyslogSender`; severities and facilities are the
 
 |Method|Meaning|
 |---|---|
-|`bool begin(target, hostname, app, port = 514)`|Validates and stores the target (IPv4 or FQDN), HOSTNAME and APP-NAME, opens the UDP socket, resolves the target. Returns false for an invalid target. Does not enable.|
+|`bool begin(target, hostname, app, port = 514)`|Validates and stores the target (IPv4 or FQDN), HOSTNAME and APP-NAME. Touches no network: safe before the interface is up. Returns false for an invalid target. Does not enable.|
 |`void end()`|Closes the socket; configuration is kept, so `begin()` can follow.|
-|`void setEnabled(bool)` / `bool isEnabled()`|Gate for every `send()`. Wire it to connected/disconnected events.|
+|`void setEnabled(bool)` / `bool isEnabled()`|Gate for every `send()`; the first `true` opens the UDP socket, so call it with the stack up. Wire it to connected/disconnected events.|
 |`void setMinSeverity(uint8_t)` / `uint8_t minSeverity()`|Messages numerically above it (less severe) are dropped. Default `SEV_DEBUG` (everything).|
 |`void setFacility(uint8_t)`|Facility for every message. Default `FAC_LOCAL0`.|
 |`void setProcId(const char*)`|PROCID field, e.g. a firmware version. Default NILVALUE.|
 |`void setClock(ClockFn)`|`bool fn(int64_t& epochSec, uint32_t& usec)`: return false while the clock is not to be trusted. Default: no timestamp.|
-|`bool resolveTarget()`|Resolves an FQDN target again (no-op for an IP). Call on network reconnect.|
+|`bool resolveTarget()`|Resolves an FQDN target (parses an IP). Needs the stack: call from the network-up event and on reconnect.|
 
 ### Sending
 

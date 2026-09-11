@@ -22,22 +22,30 @@ bool SyslogSender::begin(const char* target, const char* hostname, const char* a
     _targetIsIp = isIp;
     _resolved   = false;
     _sent = _dropped = 0;
-
-    // A local port is needed for beginPacket() on every core; 0 lets the
-    // stack pick one.
-    _udp.begin(0);
     _begun = true;
-    resolveTarget();
+
+    // Nothing touches the network stack here: begin() may run before it
+    // exists (setup() typically configures before the interface is up), and
+    // opening a socket then asserts inside lwIP. An IP target is parsed now;
+    // an FQDN waits for resolveTarget(), and the socket for setEnabled(true).
+    if (_targetIsIp) resolveTarget();
     return true;
 }
 
 void SyslogSender::end() {
     _enabled = false;
-    if (_begun) { _udp.stop(); _begun = false; }
+    if (_socketOpen) { _udp.stop(); _socketOpen = false; }
+    _begun = false;
 }
 
 void SyslogSender::setEnabled(bool on) {
-    _enabled = on && _begun;
+    if (!_begun) { _enabled = false; return; }
+    if (on && !_socketOpen) {
+        // Local port 0 lets the stack pick one; needed for beginPacket() on
+        // every core. Called from the network-up event, when the stack is up.
+        _socketOpen = _udp.begin(0) == 1;
+    }
+    _enabled = on && _socketOpen;
 }
 
 void SyslogSender::setProcId(const char* procid) {

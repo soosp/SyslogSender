@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## Fixed
+
+- `begin()` no longer opens the UDP socket or resolves an FQDN: both need the
+  network stack, and `begin()` is typically called before the interface is
+  up (on ESP32 this asserted inside lwIP). The socket opens on the first
+  `setEnabled(true)`; `resolveTarget()` is for the network-up event.
+
 ## [0.1.0] - 2026-09-11
 
 ## Added
