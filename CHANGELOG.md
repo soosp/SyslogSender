@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## Added
+
+- Add parts to README about unsuccessful DNS resoution of syslog target.
+
 ## [0.1.3] - 2026-09-12
 
 ### Changed

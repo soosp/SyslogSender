@@ -39,7 +39,10 @@ On the wire:
 - **Target validated, not resolved on every send.** IP or FQDN, checked with
   [Host](https://github.com/soosp/Host)'s validators; an FQDN is resolved by
   `resolveTarget()`, which needs the network stack — call it from the
-  network-up event, and again after a reconnect.
+  network-up event, and again after a reconnect. **Until it has succeeded,
+  every message is dropped without a sound**, so an FQDN target needs a
+  retry from the application: see *An FQDN target and a DNS that is not up
+  yet* below.
 - **Safe before the network exists.** `begin()` only stores configuration;
   the socket is opened by the first `setEnabled(true)`. So the usual order —
   configure in `setup()`, enable from the connected event — works even when
@@ -48,6 +51,36 @@ On the wire:
 Flash-resident text on AVR and ESP8266: `send(sev, tag, F("..."))` and
 `sendf_P(sev, tag, PSTR("..."), ...)` read the string from PROGMEM; the plain
 `send()`/`sendf()` take RAM pointers. On ESP32 the two are interchangeable.
+
+## An FQDN target and a DNS that is not up yet
+
+`resolveTarget()` tries once and returns whether it succeeded. After a power
+cut the DNS server is often still starting when a device's link comes up; the
+one attempt at link-up then fails, and the sender stays silent — with no error
+anywhere, since the message that would report it is one it cannot send. The
+retry belongs to the application, which knows from which task a blocking DNS
+lookup is acceptable (not from a logging task — a lookup can take seconds):
+
+```cpp
+static bool unresolved = false;
+
+void onNetworkUp() {                 // the connected / restored event
+    unresolved = !syslog.resolveTarget();
+    syslog.setEnabled(true);
+}
+
+void loop() {                        // or any task that may block
+    static uint32_t last = 0;
+    if (unresolved && millis() - last >= 30000) {
+        last = millis();
+        unresolved = !syslog.resolveTarget();
+    }
+}
+```
+
+Saying, once it succeeds, how long the target was unreachable puts the
+explanation for the gap into the log itself. An IP target needs none of this:
+it is parsed, not looked up.
 
 ## Forwarding ESP_LOG on ESP32
 
@@ -97,7 +130,7 @@ All methods are on `SyslogSender`; severities and facilities are the
 |`void setFacility(uint8_t)`|Facility for every message. Default `FAC_LOCAL0`.|
 |`void setProcId(const char*)`|PROCID field, e.g. a firmware version. Default NILVALUE.|
 |`void setClock(ClockFn)`|`bool fn(int64_t& epochSec, uint32_t& usec)`: return false while the clock is not to be trusted. Default: no timestamp.|
-|`bool resolveTarget()`|Resolves an FQDN target (parses an IP). Needs the stack: call from the network-up event and on reconnect.|
+|`bool resolveTarget()`|Resolves an FQDN target (parses an IP). Needs the stack: call from the network-up event and on reconnect. Tries once; until it succeeds every `send()` is dropped, so retry while it returns false (see *An FQDN target and a DNS that is not up yet*).|
 
 ### Sending
 
