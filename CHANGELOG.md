@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.4] - 2026-10-06
+
 ### Added
 
 - Add parts to README about unsuccessful DNS resolution of syslog target.
@@ -56,7 +58,8 @@
   `ESP_LOG` hook (requires `USE_ESP_IDF_LOG`); host tests for framing,
   timestamps and line parsing.
 
-[Unreleased]: https://github.com/soosp/SyslogSender/compare/0.1.3...HEAD
+[Unreleased]: https://github.com/soosp/SyslogSender/compare/0.1.4...HEAD
+[0.1.4]: https://github.com/soosp/SyslogSender/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/soosp/SyslogSender/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/soosp/SyslogSender/compare/0.1.1...0.1.2
 [0.1.1]: https://github.com/soosp/SyslogSender/compare/0.1.0...0.1.1
