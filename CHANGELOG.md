@@ -4,7 +4,11 @@
 
 ## Added
 
-- Add parts to README about unsuccessful DNS resoution of syslog target.
+
+### Fixed
+
+- Silence the `-Wextra` warning about mixed enumeration and integer operands
+  of the severity conditional in the ESP_LOG hook
 
 ## [0.1.3] - 2026-09-12
 

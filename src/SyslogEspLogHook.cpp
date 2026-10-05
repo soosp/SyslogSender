@@ -45,8 +45,10 @@ int hook(const char* fmt, va_list ap) {
     vsnprintf(line, sizeof(line), fmt, ap);
 
     const SyslogEspLogParse::Parsed p = SyslogEspLogParse::parse(line);
+    // A line without a level letter is INFO; both arms as uint8_t, since
+    // severityFromEspLevel() returns uint8_t and SEV_INFO is an enumerator.
     const uint8_t sev = p.level ? SyslogFormat::severityFromEspLevel(p.level)
-                                : SyslogFormat::SEV_INFO;
+                                : static_cast<uint8_t>(SyslogFormat::SEV_INFO);
     if (sev <= s_minSeverity) {
         char tag[SyslogFormat::MAX_MSGID + 1];
         const char* msgid = nullptr;
