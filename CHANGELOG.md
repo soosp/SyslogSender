@@ -2,8 +2,9 @@
 
 ## [Unreleased]
 
-## Added
+### Added
 
+- Add parts to README about unsuccessful DNS resolution of syslog target.
 
 ### Fixed
 
