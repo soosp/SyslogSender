@@ -18,11 +18,15 @@ vprintf_like_t        s_previous = nullptr;
 std::atomic<bool>     s_inHook{false};
 std::atomic<uint32_t> s_skipped{0};
 
-// Free bytes on the calling task's stack below this frame. Stacks grow down
-// on both ESP32 cores (Xtensa and RISC-V).
-size_t stackFree() {
+// Free bytes on the calling task's stack below this point. Stacks grow down
+// on both ESP32 cores (Xtensa and RISC-V). The position is a local's address:
+// __builtin_frame_address(0) reads the frame-pointer register, which code
+// built without frame pointers uses as an ordinary register, so it can be
+// anything.
+__attribute__((noinline)) size_t stackFree() {
+    volatile uint8_t mark = 0;
     const uint8_t* bottom = pxTaskGetStackStart(nullptr);
-    const uint8_t* here   = static_cast<const uint8_t*>(__builtin_frame_address(0));
+    const uint8_t* here   = const_cast<const uint8_t*>(&mark);
     return (bottom && here > bottom) ? static_cast<size_t>(here - bottom) : 0;
 }
 

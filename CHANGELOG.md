@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- The stack check before forwarding measured from `__builtin_frame_address(0)`,
+  which in code built without frame pointers is an arbitrary register value:
+  the check could pass on a nearly full stack, and the forwarding overflowed
+  it as before. It now measures from the address of a local variable.
+- `SYSLOG_ESPLOG_STACK_RESERVE` raised to `2 * SYSLOG_SENDER_MAX_LEN + 2048`
+
 ## [0.2.0] - 2026-10-10
 
 ### Fixed
