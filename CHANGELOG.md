@@ -9,6 +9,9 @@
   the check could pass on a nearly full stack, and the forwarding overflowed
   it as before. It now measures from the address of a local variable.
 - `SYSLOG_ESPLOG_STACK_RESERVE` raised to `2 * SYSLOG_SENDER_MAX_LEN + 2048`
+  (3 kB by default): the forwarding path's deepest point is the timestamp's
+  `snprintf`, whose newlib formatter frame alone is 1152 bytes, under both
+  line buffers — about 2.6 kB in all.
 
 ## [0.2.0] - 2026-10-10
 

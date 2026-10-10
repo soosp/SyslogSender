@@ -33,9 +33,11 @@
  */
 
 #ifndef SYSLOG_ESPLOG_STACK_RESERVE
-/// Free stack the hook requires before forwarding: the two line buffers,
-/// the UDP send through lwIP, and a margin.
-#  define SYSLOG_ESPLOG_STACK_RESERVE (2 * SYSLOG_SENDER_MAX_LEN + 1024)
+/// Free stack the hook requires before forwarding: the two line buffers and
+/// newlib's formatter under them — the timestamp's snprintf runs
+/// _svfprintf_r, whose frame alone is 1152 bytes on the ESP32-P4 — and a
+/// margin. The deepest path is about 2 * SYSLOG_SENDER_MAX_LEN + 1.6 kB.
+#  define SYSLOG_ESPLOG_STACK_RESERVE (2 * SYSLOG_SENDER_MAX_LEN + 2048)
 #endif
 
 #if defined(ARDUINO_ARCH_ESP32)
