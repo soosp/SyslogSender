@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-10
+
 ### Fixed
 
 - The ESP_LOG hook overflowed the stack of the ESP-IDF event task
@@ -75,7 +77,8 @@
   `ESP_LOG` hook (requires `USE_ESP_IDF_LOG`); host tests for framing,
   timestamps and line parsing.
 
-[Unreleased]: https://github.com/soosp/SyslogSender/compare/0.1.4...HEAD
+[Unreleased]: https://github.com/soosp/SyslogSender/compare/0.2.0...HEAD
+[0.2.0]: https://github.com/soosp/SyslogSender/compare/0.1.4...0.2.0
 [0.1.4]: https://github.com/soosp/SyslogSender/compare/0.1.3...0.1.4
 [0.1.3]: https://github.com/soosp/SyslogSender/compare/0.1.2...0.1.3
 [0.1.2]: https://github.com/soosp/SyslogSender/compare/0.1.1...0.1.2
