@@ -156,6 +156,7 @@ All methods are on `SyslogSender`; severities and facilities are the
 |---|---|
 |`install(SyslogSender&, minSeverity = SEV_INFO)`|Routes every ESP-IDF log line to the sender; lines below `minSeverity` stay console-only. Requires `-DUSE_ESP_IDF_LOG`.|
 |`uninstall()`|Restores the previous log output.|
+|`skipped()`|Lines kept on the console only because the logging task had less than `SYSLOG_ESPLOG_STACK_RESERVE` bytes of stack free.|
 
 ### Pure helpers (`SyslogFormat.h`, `SyslogEspLogParse.h`)
 

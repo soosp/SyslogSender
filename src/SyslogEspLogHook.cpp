@@ -5,17 +5,56 @@
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+#if __has_include(<freertos/idf_additions.h>)
+#include <freertos/idf_additions.h>   // pxTaskGetStackStart()
+#endif
 #include <atomic>
 
 namespace {
 
-SyslogSender*       s_sender = nullptr;
-uint8_t             s_minSeverity = SyslogFormat::SEV_INFO;
-vprintf_like_t      s_previous = nullptr;
-std::atomic<bool>   s_inHook{false};
+SyslogSender*         s_sender = nullptr;
+uint8_t               s_minSeverity = SyslogFormat::SEV_INFO;
+vprintf_like_t        s_previous = nullptr;
+std::atomic<bool>     s_inHook{false};
+std::atomic<uint32_t> s_skipped{0};
+
+// Free bytes on the calling task's stack below this frame. Stacks grow down
+// on both ESP32 cores (Xtensa and RISC-V).
+size_t stackFree() {
+    const uint8_t* bottom = pxTaskGetStackStart(nullptr);
+    const uint8_t* here   = static_cast<const uint8_t*>(__builtin_frame_address(0));
+    return (bottom && here > bottom) ? static_cast<size_t>(here - bottom) : 0;
+}
+
+// The forwarding half, with the line buffer. Kept out of hook() so that the
+// console output, which runs first, does not run with this frame on the
+// stack: in a task with a small stack (the ESP-IDF event task, 2.5 kB) the
+// two together overflow it.
+__attribute__((noinline)) void forward(const char* fmt, va_list ap) {
+    char line[SYSLOG_SENDER_MAX_LEN];
+    vsnprintf(line, sizeof(line), fmt, ap);
+
+    const SyslogEspLogParse::Parsed p = SyslogEspLogParse::parse(line);
+    // A line without a level letter is INFO; both arms as uint8_t, since
+    // severityFromEspLevel() returns uint8_t and SEV_INFO is an enumerator.
+    const uint8_t sev = p.level ? SyslogFormat::severityFromEspLevel(p.level)
+                                : static_cast<uint8_t>(SyslogFormat::SEV_INFO);
+    if (sev > s_minSeverity) return;
+    char tag[SyslogFormat::MAX_MSGID + 1];
+    const char* msgid = nullptr;
+    if (p.tag) {
+        size_t n = p.tagLen < SyslogFormat::MAX_MSGID ? p.tagLen : SyslogFormat::MAX_MSGID;
+        memcpy(tag, p.tag, n);
+        tag[n] = '\0';
+        msgid = tag;
+    }
+    // Sent by length, straight out of the line buffer: no second copy on
+    // this task's stack.
+    s_sender->send(sev, msgid, p.msg, p.msgLen);
+}
 
 int hook(const char* fmt, va_list ap) {
-    // Serial first, always, exactly as before.
+    // Console first, always, with only this small frame on the stack.
     int written = 0;
     if (s_previous) {
         va_list ap2;
@@ -39,30 +78,16 @@ int hook(const char* fmt, va_list ap) {
         }
     }
 
-    if (s_inHook.exchange(true)) return written;   // nested log from the stack
-
-    char line[SYSLOG_SENDER_MAX_LEN];
-    vsnprintf(line, sizeof(line), fmt, ap);
-
-    const SyslogEspLogParse::Parsed p = SyslogEspLogParse::parse(line);
-    // A line without a level letter is INFO; both arms as uint8_t, since
-    // severityFromEspLevel() returns uint8_t and SEV_INFO is an enumerator.
-    const uint8_t sev = p.level ? SyslogFormat::severityFromEspLevel(p.level)
-                                : static_cast<uint8_t>(SyslogFormat::SEV_INFO);
-    if (sev <= s_minSeverity) {
-        char tag[SyslogFormat::MAX_MSGID + 1];
-        const char* msgid = nullptr;
-        if (p.tag) {
-            size_t n = p.tagLen < SyslogFormat::MAX_MSGID ? p.tagLen : SyslogFormat::MAX_MSGID;
-            memcpy(tag, p.tag, n);
-            tag[n] = '\0';
-            msgid = tag;
-        }
-        // Sent by length, straight out of the line buffer: no second copy on
-        // this task's stack.
-        s_sender->send(sev, msgid, p.msg, p.msgLen);
+    // Forwarding needs the line buffer, the frame and the UDP send on this
+    // task's stack. A task without that much room left keeps the line on
+    // the console only; skipped() counts them.
+    if (stackFree() < SYSLOG_ESPLOG_STACK_RESERVE) {
+        s_skipped.fetch_add(1, std::memory_order_relaxed);
+        return written;
     }
 
+    if (s_inHook.exchange(true)) return written;   // nested log from the stack
+    forward(fmt, ap);
     s_inHook.store(false);
     return written;
 }
@@ -73,6 +98,10 @@ void SyslogEspLogHook::install(SyslogSender& sender, uint8_t minSeverity) {
     s_sender      = &sender;
     s_minSeverity = minSeverity;
     if (!s_previous) s_previous = esp_log_set_vprintf(hook);
+}
+
+uint32_t SyslogEspLogHook::skipped() {
+    return s_skipped.load(std::memory_order_relaxed);
 }
 
 void SyslogEspLogHook::uninstall() {

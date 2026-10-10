@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- The ESP_LOG hook overflowed the stack of the ESP-IDF event task
+  (`sys_evt`, 2.5 kB on the Arduino core) when a network event was logged:
+  the console output ran with the hook's line buffer already on the stack.
+  On an ESP32-P4 the hardware stack guard turned this into a panic
+  ("Stack protection fault") on every Ethernet link change.
+  The console output now runs with only a small frame on the stack, and the
+  forwarding half, with the buffers, is a separate function.
+
+### Added
+
+- `SYSLOG_ESPLOG_STACK_RESERVE` (default `2 * SYSLOG_SENDER_MAX_LEN + 1024`):
+  a line is forwarded only if the logging task has that much stack free at
+  the hook; otherwise it stays on the console and `SyslogEspLogHook::skipped()`
+  counts it.
+
 ## [0.1.4] - 2026-10-06
 
 ### Added

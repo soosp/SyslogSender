@@ -22,10 +22,21 @@
  * line logged from an ISR is serial-only as well.
  *
  * Cost: the line is formatted twice (once for serial, once for the frame),
- * into two stack buffers in the logging task's context. Size them with
- * SYSLOG_SENDER_MAX_LEN; a task that logs with a small stack should be given
- * room for it.
+ * into two stack buffers in the logging task's context, each
+ * SYSLOG_SENDER_MAX_LEN. The console output runs first, without those
+ * buffers on the stack. A line is forwarded only if the logging task has at
+ * least SYSLOG_ESPLOG_STACK_RESERVE bytes of stack free at the hook;
+ * otherwise it stays on the console and skipped() counts it. Tasks whose
+ * stack is not the application's — the ESP-IDF event task (sys_evt, 2.5 kB
+ * on the Arduino core), which logs network events — are why: forwarding from
+ * there overflows it.
  */
+
+#ifndef SYSLOG_ESPLOG_STACK_RESERVE
+/// Free stack the hook requires before forwarding: the two line buffers,
+/// the UDP send through lwIP, and a margin.
+#  define SYSLOG_ESPLOG_STACK_RESERVE (2 * SYSLOG_SENDER_MAX_LEN + 1024)
+#endif
 
 #if defined(ARDUINO_ARCH_ESP32)
 
@@ -47,6 +58,10 @@ void install(SyslogSender& sender, uint8_t minSeverity = SyslogFormat::SEV_INFO)
 
 /** @brief Restores the previous vprintf. */
 void uninstall();
+
+/** @brief Lines kept on the console only because the logging task had less
+ *         than SYSLOG_ESPLOG_STACK_RESERVE bytes of stack free. */
+uint32_t skipped();
 
 } // namespace SyslogEspLogHook
 
