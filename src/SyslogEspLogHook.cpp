@@ -6,8 +6,9 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #if __has_include(<freertos/idf_additions.h>)
-#include <freertos/idf_additions.h>   // pxTaskGetStackStart()
+#include <freertos/idf_additions.h>   // xTaskGetStackStart()
 #endif
+#include <esp_idf_version.h>
 #include <atomic>
 
 namespace {
@@ -25,7 +26,13 @@ std::atomic<uint32_t> s_skipped{0};
 // anything.
 __attribute__((noinline)) size_t stackFree() {
     volatile uint8_t mark = 0;
+    // xTaskGetStackStart arrived in ESP-IDF 5.3 and replaced
+    // pxTaskGetStackStart, which IDF 6 deprecates; same value, new type.
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+    const uint8_t* bottom = reinterpret_cast<const uint8_t*>(xTaskGetStackStart(nullptr));
+#else
     const uint8_t* bottom = pxTaskGetStackStart(nullptr);
+#endif
     const uint8_t* here   = const_cast<const uint8_t*>(&mark);
     return (bottom && here > bottom) ? static_cast<size_t>(here - bottom) : 0;
 }

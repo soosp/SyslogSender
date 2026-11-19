@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- The stack check called `pxTaskGetStackStart`, which ESP-IDF 6 deprecates
+  (Arduino-ESP32 4.0.0 warns on every build): on ESP-IDF 5.3 and later it
+  now calls its replacement, `xTaskGetStackStart`, and older cores keep the
+  old call. Same value, no behavior change.
+
 ## [0.2.1] - 2026-10-10
 
 ### Fixed
